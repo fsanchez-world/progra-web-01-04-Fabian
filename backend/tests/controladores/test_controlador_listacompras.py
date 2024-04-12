@@ -380,3 +380,64 @@ class TestMarcarProductoComoComprado:
         assert response.status_code == 401
         assert 'Missing Authorization Header' in response.get_json()['msg']
 
+class TestMarcarListaComoCompletada:
+    @pytest.fixture
+    def usuario(self, session):
+        # Create a user in the database
+        usuario = Usuario(nombre_usuario="completarTestUser", hash_contrasena="hashedpassword")
+        session.add(usuario)
+        session.commit()
+        return usuario
+
+    @pytest.fixture
+    def token(self, usuario):
+        # Generate a JWT token for the user
+        return create_access_token(identity=usuario.nombre_usuario)
+
+    @pytest.fixture
+    def producto(self, session):
+        # Create a product in the database
+        producto = Producto(nombre="Water", tipo_medida="Bottles")
+        session.add(producto)
+        session.commit()
+        return producto
+
+    @pytest.fixture
+    def lista_compras(self, session, usuario):
+        # Create a shopping list for the user
+        lista_compras = ListaCompra(nombre="Weekly Needs", id_usuario=usuario.id)
+        session.add(lista_compras)
+        session.commit()
+        return lista_compras
+
+    @pytest.fixture
+    def producto_lista(self, session, lista_compras, producto):
+        # Add a product to the shopping list
+        producto_lista = ProductoLista(id_lista=lista_compras.id, id_producto=producto.id, cantidad=3, comprado=False)
+        session.add(producto_lista)
+        session.commit()
+        return producto_lista
+
+    def test_marcar_lista_como_completada_exitoso(self, client, token, lista_compras, producto_lista):
+        """ Test marking an entire shopping list as completed successfully. """
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.patch(f'/v1/listascompras/{lista_compras.id}/completar', headers=headers)
+        assert response.status_code == 200
+        assert 'Lista de compras marcada como completada exitosamente.' in response.get_json()['mensaje']
+        # Ensure the product and the list are marked as completed
+        assert ProductoLista.query.get(producto_lista.id).comprado == True
+        assert ListaCompra.query.get(lista_compras.id).completa == True
+
+    def test_marcar_lista_inexistente_como_completada(self, client, token):
+        """ Test marking a non-existent shopping list as completed. """
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.patch('/v1/listascompras/9999/completar', headers=headers)
+        assert response.status_code == 404
+        assert 'Lista de compras no encontrada' in response.get_json()['error']
+
+    def test_marcar_lista_como_completada_sin_token(self, client, lista_compras):
+        """ Test marking a shopping list as completed without providing a JWT token. """
+        response = client.patch(f'/v1/listascompras/{lista_compras.id}/completar')
+        assert response.status_code == 401
+        assert 'Missing Authorization Header' in response.get_json()['msg']
+
