@@ -259,3 +259,57 @@ class TestEliminarProductoDeLista:
         assert response.status_code == 401
         assert 'Missing Authorization Header' in response.get_json()['msg']
 
+class TestEliminarListaCompras:
+    @pytest.fixture
+    def usuario(self, session):
+        usuario = Usuario(nombre_usuario="testuser3", hash_contrasena="hashedpassword")
+        session.add(usuario)
+        session.commit()
+        return usuario
+
+    @pytest.fixture
+    def token(self, usuario):
+        return create_access_token(identity=usuario.nombre_usuario)
+
+    @pytest.fixture
+    def lista_compras(self, session, usuario):
+        lista_compras = ListaCompra(nombre="Monthly Groceries", id_usuario=usuario.id)
+        session.add(lista_compras)
+        session.commit()
+        return lista_compras
+
+    @pytest.fixture
+    def producto(self, session):
+        producto = Producto(nombre="Eggs", tipo_medida="Dozen")
+        session.add(producto)
+        session.commit()
+        return producto
+
+    @pytest.fixture
+    def producto_en_lista(self, session, lista_compras, producto):
+        producto_lista = ProductoLista(id_lista=lista_compras.id, id_producto=producto.id, cantidad=12, comprado=False)
+        session.add(producto_lista)
+        session.commit()
+        return producto_lista
+
+    def test_eliminar_lista_compras_exitoso(self, client, token, lista_compras, producto_en_lista):
+        """ Test the successful deletion of a shopping list including all associated products. """
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.delete(f'/v1/listascompras/{lista_compras.id}', headers=headers)
+        assert response.status_code == 200
+        assert 'Lista de compras eliminada exitosamente.' in response.get_json()['mensaje']
+        assert ListaCompra.query.count() == 0  # Checks that the list has been removed
+
+    def test_eliminar_lista_compras_inexistente(self, client, token):
+        """ Test deletion attempt for a non-existent shopping list. """
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.delete('/v1/listascompras/999', headers=headers)
+        assert response.status_code == 404
+        assert 'Lista de compras no encontrada' in response.get_json()['error']
+
+    def test_eliminar_lista_compras_sin_token(self, client, lista_compras):
+        """ Test the response when no JWT token is provided during deletion. """
+        response = client.delete(f'/v1/listascompras/{lista_compras.id}')
+        assert response.status_code == 401
+        assert 'Missing Authorization Header' in response.get_json()['msg']
+
