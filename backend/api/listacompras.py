@@ -20,3 +20,6 @@ listas_compras_bp.route('/v1/listascompras/<int:listaID>', methods=['DELETE'])(C
 
 # API endpoint para marcar un producto como comprado en una lista de compras
 listas_compras_bp.route('/v1/listascompras/<int:listaID>/productos/<int:productoID>', methods=['PATCH'])(ControladorListaCompras.marcar_producto_como_comprado)
+
+# API endpoint para marcar todos los productos de una lista como comprados y la lista como completa
+listas_compras_bp.route('/v1/listascompras/<int:listaID>/completar', methods=['PATCH'])(ControladorListaCompras.marcar_lista_como_completada)

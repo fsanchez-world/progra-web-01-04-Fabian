@@ -169,3 +169,22 @@ class ControladorListaCompras:
         db.session.commit()
 
         return jsonify({"mensaje": "Producto marcado como comprado exitosamente"}), 200
+
+    @staticmethod
+    @jwt_required()
+    def marcar_lista_como_completada(listaID):
+        """
+        Marca todos los productos de una lista de compras como comprados y la lista como completada.
+        """
+        user_id = get_jwt_identity()  # Suponiendo que la identidad es el nombre de usuario
+        lista_compra = ListaCompra.query.filter_by(id=listaID).first()
+        if not lista_compra:
+            return jsonify({"error": "Lista de compras no encontrada"}), 404
+
+        # Marcar todos los productos como comprados
+        for producto in lista_compra.productos:
+            producto.comprado = True
+        lista_compra.completa = True  # Marcar la lista como completada
+        db.session.commit()
+
+        return jsonify({"mensaje": "Lista de compras marcada como completada exitosamente."}), 200
