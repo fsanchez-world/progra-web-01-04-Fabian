@@ -200,4 +200,62 @@ class TestConsultarListasCompras:
         """ Test the response when no JWT token is provided. """
         response = client.get('/v1/listascompras')
         assert response.status_code == 401
+        assert 'Missing Authorization Header' in response.get_json()['msg']# Importing necessary modules and test fixtures
+
+class TestEliminarProductoDeLista:
+    @pytest.fixture
+    def usuario(self, session):
+        usuario = Usuario(nombre_usuario="testuser2", hash_contrasena="hashedpassword")
+        session.add(usuario)
+        session.commit()
+        return usuario
+
+    @pytest.fixture
+    def token(self, usuario):
+        return create_access_token(identity=usuario.nombre_usuario)
+
+    @pytest.fixture
+    def producto(self, session):
+        producto = Producto(nombre="Bread", tipo_medida="Units")
+        session.add(producto)
+        session.commit()
+        return producto
+
+    @pytest.fixture
+    def lista_compras(self, session, usuario):
+        lista_compras = ListaCompra(nombre="Weekend Shopping", id_usuario=usuario.id)
+        session.add(lista_compras)
+        session.commit()
+        return lista_compras
+
+    @pytest.fixture
+    def producto_en_lista(self, session, lista_compras, producto):
+        producto_lista = ProductoLista(id_lista=lista_compras.id, id_producto=producto.id, cantidad=1, comprado=False)
+        session.add(producto_lista)
+        session.commit()
+        return producto_lista
+
+    def test_eliminar_producto_exitoso(self, client, token, lista_compras, producto_en_lista):
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.delete(f'/v1/listascompras/{lista_compras.id}/productos/{producto_en_lista.id_producto}', headers=headers)
+        assert response.status_code == 200
+        assert 'Producto eliminado exitosamente de la lista' in response.get_json()['mensaje']
+        assert ProductoLista.query.count() == 0  # Checks that the product has been removed from the list
+
+    def test_eliminar_producto_lista_inexistente(self, client, token, producto):
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.delete(f'/v1/listascompras/9999/productos/{producto.id}', headers=headers)
+        assert response.status_code == 404
+        assert 'Lista de compras no encontrada' in response.get_json()['error']
+
+    def test_eliminar_producto_no_en_lista(self, client, token, lista_compras, producto):
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.delete(f'/v1/listascompras/{lista_compras.id}/productos/9999', headers=headers)
+        assert response.status_code == 404
+        assert 'Producto no encontrado en la lista' in response.get_json()['error']
+
+    def test_eliminar_producto_sin_token(self, client, lista_compras, producto):
+        response = client.delete(f'/v1/listascompras/{lista_compras.id}/productos/{producto.id}')
+        assert response.status_code == 401
         assert 'Missing Authorization Header' in response.get_json()['msg']
+
