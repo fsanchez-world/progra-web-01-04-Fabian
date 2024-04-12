@@ -8,3 +8,6 @@ listas_compras_bp.route('/v1/listascompras', methods=['POST'])(ControladorListaC
 
 # Punto de API para agregar productos a una lista de compras
 listas_compras_bp.route('/v1/listascompras/<int:listaID>/productos', methods=['POST'])(ControladorListaCompras.agregar_producto_a_lista)
+
+# Punta de API para consultar todas las listas de compras de un usuario
+listas_compras_bp.route('/v1/listascompras', methods=['GET'])(ControladorListaCompras.consultar_listas_compras)

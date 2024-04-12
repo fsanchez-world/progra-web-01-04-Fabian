@@ -68,3 +68,38 @@ class ControladorListaCompras:
         db.session.commit()
 
         return jsonify({"mensaje": "Producto agregado exitosamente a la lista"}), 201
+
+    @staticmethod
+    @jwt_required()
+    def consultar_listas_compras():
+        user_id = get_jwt_identity()  # Suponiendo que la identidad es el nombre de usuario
+
+        # Obtener el usuario por nombre de usuario para obtener el ID de usuario
+        usuario = Usuario.query.filter_by(nombre_usuario=user_id).first()
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        # Obtener todas las listas de compras del usuario
+        listas = ListaCompra.query.filter_by(id_usuario=usuario.id).all()
+        resultados = []
+        for lista in listas:
+            # Obtener los productos de cada lista
+            productos = []
+            for producto_lista in lista.productos:
+                producto = {
+                    "id_producto": producto_lista.producto.id,
+                    "nombre": producto_lista.producto.nombre,
+                    "tipo_medida": producto_lista.producto.tipo_medida,
+                    "cantidad": producto_lista.cantidad,
+                    "comprado": producto_lista.comprado
+                }
+                productos.append(producto)
+            resultado = {
+                "id_lista": lista.id,
+                "nombre_lista": lista.nombre,
+                "completa": lista.completa,
+                "productos": productos
+            }
+            resultados.append(resultado)
+
+        return jsonify(resultados), 200
