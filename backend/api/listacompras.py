@@ -17,3 +17,6 @@ listas_compras_bp.route('/v1/listascompras/<int:listaID>/productos/<int:producto
 
 # API endpoint para eliminar una lista de compras
 listas_compras_bp.route('/v1/listascompras/<int:listaID>', methods=['DELETE'])(ControladorListaCompras.eliminar_lista_compras)
+
+# API endpoint para marcar un producto como comprado en una lista de compras
+listas_compras_bp.route('/v1/listascompras/<int:listaID>/productos/<int:productoID>', methods=['PATCH'])(ControladorListaCompras.marcar_producto_como_comprado)

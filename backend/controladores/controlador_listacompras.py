@@ -130,19 +130,42 @@ class ControladorListaCompras:
     @jwt_required()
     def eliminar_lista_compras(listaID):
         """
-        Eliminates an entire shopping list including all associated products.
+        Elimina una lista de compras completa, incluyendo todos los productos asociados.
         """
-        user_id = get_jwt_identity()  # Assuming identity is the user's username
+        user_id = get_jwt_identity()  # Suponiendo que la identidad es el nombre de usuario
 
-        # Fetch the list to be deleted
+        # Obtener la lista a eliminar
         lista_compra = ListaCompra.query.filter_by(id=listaID).first()
         if not lista_compra:
             return jsonify({"error": "Lista de compras no encontrada"}), 404
         
-        # Delete all associated product entries
+        # Eliminar todas las entradas de productos asociadas
         ProductoLista.query.filter_by(id_lista=listaID).delete()
-        # Delete the shopping list itself
+        # Eliminar la lista de compras en sí
         db.session.delete(lista_compra)
         db.session.commit()
 
         return jsonify({"mensaje": "Lista de compras eliminada exitosamente."}), 200
+
+    @staticmethod
+    @jwt_required()
+    def marcar_producto_como_comprado(listaID, productoID):
+        """
+        Marca un producto como comprado en una lista de compras.
+        """
+        # Verificar que el usuario esté autorizado para la lista
+        user_id = get_jwt_identity()
+        lista_compra = ListaCompra.query.filter_by(id=listaID).first()
+        if not lista_compra:
+            return jsonify({"error": "Lista de compras no encontrada"}), 404
+
+        # Verificar que el producto esté en la lista
+        producto_lista = ProductoLista.query.filter_by(id_lista=listaID, id_producto=productoID).first()
+        if not producto_lista:
+            return jsonify({"error": "Producto no encontrado en la lista"}), 404
+
+        # Marcar el producto como comprado
+        producto_lista.comprado = True
+        db.session.commit()
+
+        return jsonify({"mensaje": "Producto marcado como comprado exitosamente"}), 200
