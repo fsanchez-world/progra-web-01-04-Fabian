@@ -11,3 +11,6 @@ listas_compras_bp.route('/v1/listascompras/<int:listaID>/productos', methods=['P
 
 # Punta de API para consultar todas las listas de compras de un usuario
 listas_compras_bp.route('/v1/listascompras', methods=['GET'])(ControladorListaCompras.consultar_listas_compras)
+
+# Punta de API para eliminar un producto de una lista de compras
+listas_compras_bp.route('/v1/listascompras/<int:listaID>/productos/<int:productoID>', methods=['DELETE'])(ControladorListaCompras.eliminar_producto_de_lista)

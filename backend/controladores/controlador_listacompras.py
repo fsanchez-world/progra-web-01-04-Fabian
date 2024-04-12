@@ -103,3 +103,25 @@ class ControladorListaCompras:
             resultados.append(resultado)
 
         return jsonify(resultados), 200
+
+    @staticmethod
+    @jwt_required()
+    def eliminar_producto_de_lista(listaID, productoID):
+        """
+        Elimina un producto de una lista de compras.
+        """
+        # Verificar que el usuario esté autorizado para modificar la lista
+        user_id = get_jwt_identity()
+        lista_compra = ListaCompra.query.filter_by(id=listaID).first()
+        if not lista_compra:
+            return jsonify({"error": "Lista de compras no encontrada"}), 404
+        
+        # Verificar que el producto esté en la lista
+        producto_lista = ProductoLista.query.filter_by(id_lista=listaID, id_producto=productoID).first()
+        if not producto_lista:
+            return jsonify({"error": "Producto no encontrado en la lista"}), 404
+
+        # Eliminar el producto de la lista
+        db.session.delete(producto_lista)
+        db.session.commit()
+        return jsonify({"mensaje": "Producto eliminado exitosamente de la lista"}), 200
