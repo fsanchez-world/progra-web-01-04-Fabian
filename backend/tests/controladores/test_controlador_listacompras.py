@@ -139,3 +139,65 @@ class TestAgregarProductoALista:
         response = client.post(f'/v1/listascompras/{lista_compras.id}/productos', data=json.dumps(data), content_type='application/json')
         assert response.status_code == 401
         assert 'Missing Authorization Header' in response.get_json()['msg']
+
+class TestConsultarListasCompras:
+    @pytest.fixture
+    def usuario(self, session):
+        # Creates a user fixture that will be used in the tests
+        usuario = Usuario(nombre_usuario="testuser", hash_contrasena="hashedpassword")
+        session.add(usuario)
+        session.commit()
+        return usuario
+
+    @pytest.fixture
+    def token(self, usuario):
+        # Generates a JWT token for the user
+        return create_access_token(identity=usuario.nombre_usuario)
+
+    @pytest.fixture
+    def lista_compras(self, session, usuario):
+        # Creates a shopping list fixture for the user
+        lista_compras = ListaCompra(nombre="Weekly Groceries", id_usuario=usuario.id)
+        session.add(lista_compras)
+        session.commit()
+        return lista_compras
+
+    @pytest.fixture
+    def producto(self, session):
+        # Creates a product fixture
+        producto = Producto(nombre="Apples", tipo_medida="Kilogram")
+        session.add(producto)
+        session.commit()
+        return producto
+
+    @pytest.fixture
+    def producto_lista(self, session, lista_compras, producto):
+        # Adds a product to the shopping list
+        producto_lista = ProductoLista(id_lista=lista_compras.id, id_producto=producto.id, cantidad=5, comprado=False)
+        session.add(producto_lista)
+        session.commit()
+        return producto_lista
+
+    def test_consultar_listas_compras_exitoso(self, client, usuario, token, lista_compras, producto_lista):
+        """ Test successful retrieval of all shopping lists with detailed products for a user. """
+        headers = {'Authorization': f'Bearer {token}'}
+        response = client.get('/v1/listascompras', headers=headers)
+        assert response.status_code == 200
+        data = response.get_json()
+        assert len(data) == 1  # One list should be present
+        assert data[0]['nombre_lista'] == 'Weekly Groceries'
+        assert data[0]['productos'][0]['nombre'] == 'Apples'
+
+    def test_consultar_listas_compras_usuario_no_encontrado(self, client, token):
+        """ Test the response when no user is found with the provided token identity. """
+        bad_token = create_access_token(identity="nonexistentuser")
+        headers = {'Authorization': f'Bearer {bad_token}'}
+        response = client.get('/v1/listascompras', headers=headers)
+        assert response.status_code == 404
+        assert 'Usuario no encontrado' in response.get_json()['error']
+
+    def test_consultar_listas_compras_sin_token(self, client):
+        """ Test the response when no JWT token is provided. """
+        response = client.get('/v1/listascompras')
+        assert response.status_code == 401
+        assert 'Missing Authorization Header' in response.get_json()['msg']
