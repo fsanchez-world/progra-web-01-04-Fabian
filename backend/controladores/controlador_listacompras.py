@@ -125,3 +125,24 @@ class ControladorListaCompras:
         db.session.delete(producto_lista)
         db.session.commit()
         return jsonify({"mensaje": "Producto eliminado exitosamente de la lista"}), 200
+
+    @staticmethod
+    @jwt_required()
+    def eliminar_lista_compras(listaID):
+        """
+        Eliminates an entire shopping list including all associated products.
+        """
+        user_id = get_jwt_identity()  # Assuming identity is the user's username
+
+        # Fetch the list to be deleted
+        lista_compra = ListaCompra.query.filter_by(id=listaID).first()
+        if not lista_compra:
+            return jsonify({"error": "Lista de compras no encontrada"}), 404
+        
+        # Delete all associated product entries
+        ProductoLista.query.filter_by(id_lista=listaID).delete()
+        # Delete the shopping list itself
+        db.session.delete(lista_compra)
+        db.session.commit()
+
+        return jsonify({"mensaje": "Lista de compras eliminada exitosamente."}), 200
