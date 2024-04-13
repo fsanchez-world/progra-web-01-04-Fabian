@@ -49,3 +49,17 @@ class ProductoLista(db.Model):
     comprado = db.Column('Comprado', db.Boolean, nullable=False, default=False)
     creado_en = db.Column('CreadoEn', db.DateTime, nullable=False, default=db.func.now())
     actualizado_en = db.Column('ActualizadoEn', db.DateTime, nullable=False, default=db.func.now(), onupdate=db.func.now())
+
+class RevokedToken(db.Model):
+    __tablename__ = 'revoked_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(120), unique=True, nullable=False)  # jti es el identificador único para JWT
+
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
+
+    @classmethod
+    def is_jti_blacklisted(cls, jti):
+        query = cls.query.filter_by(jti=jti).first()
+        return bool(query)
