@@ -1,6 +1,6 @@
 import os
-from flask import Flask
-from .modelos import db  
+from flask import Flask, jsonify
+from .modelos import RevokedToken, db  
 from os import getenv  
 from dotenv import load_dotenv  
 from flask_jwt_extended import JWTManager  
@@ -9,6 +9,18 @@ from flask_jwt_extended import JWTManager
 from backend.api.usuarios import usuarios_bp
 from backend.api.productos import productos_bp
 from backend.api.listacompras import listas_compras_bp
+
+def jwt_callbacks(app):
+    jwt = JWTManager(app)
+
+    @jwt.token_in_blocklist_loader
+    def check_if_token_in_blacklist(jwt_header, jwt_payload):
+        jti = jwt_payload['jti']
+        return RevokedToken.is_jti_blacklisted(jti)
+
+    @jwt.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        return jsonify({"error": "Token has been revoked"}), 401
 
 # Definir la función para crear y configurar la instancia de la aplicación Flask
 def crear_app(environment=None):
@@ -39,6 +51,7 @@ def crear_app(environment=None):
     app.config.from_object(Config)
     # Inicializar la base de datos con la instancia de la aplicación Flask
     db.init_app(app)
+    jwt_callbacks(app)
 
     # Registrar blueprints (componentes) con la instancia de la aplicación Flask
     app.register_blueprint(usuarios_bp)
