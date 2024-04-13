@@ -1,387 +1,277 @@
-## Proceso de Autenticación
+## Documentación de la API del Sistema de Gestión de Listas de Compras
 
-1. **Inicio de Sesión y Generación de Token JWT**
-   - **Descripción**: Este endpoint permite a los usuarios iniciar sesión con su nombre de usuario y contraseña. Al autenticarse correctamente, se genera un token JWT.
-   - **URL**: `/v1/login`
-   - **Headers necesarios**:
-     - `Content-Type: application/json`
-   - **Body schema**:
-     ```json
-     {
-       "nombreUsuario": "string",
-       "contraseña": "string"
-     }
-     ```
-   - **HTTP codes**:
-     - `200 OK`: Inicio de sesión exitoso.
-     - `401 Unauthorized`: Nombre de usuario o contraseña incorrectos.
-   - **Ejemplo**:
-     - **Request**:
-       ```json
-       {
-         "nombreUsuario": "usuarioEjemplo",
-         "contraseña": "Contraseña123!"
-       }
-       ```
-     - **Response**:
-       ```json
-       {
-         "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-       }
-       ```
+La API del sistema permite la gestión de usuarios, productos y listas de compras. Aquí se incluye una descripción detallada de cada uno de los endpoints disponibles, incluyendo los esquemas JSON para las solicitudes y respuestas, así como los códigos de error específicos que pueden ser devueltos por cada operación.
 
-2. **Uso del Token y Almacenamiento Local**
-   - Los tokens JWT deben almacenarse en el almacenamiento local del navegador o dispositivo móvil después del inicio de sesión.
-   - Para cada solicitud a la API que requiera autenticación, se debe incluir el token en los headers como: 
-     - `Authorization: Bearer <token>`
+### Usuarios
 
-3. **Lista Permitida y Control de Revocación de Token**
-   - Implementar una lista permitida en el servidor para gestionar tokens activos y su revocación.
-   - En caso de necesidad de revocación, eliminar el token del almacenamiento local y solicitar al usuario volver a iniciar sesión.
+#### Registro de usuario
 
-4. **Refresco del Token**
-   - Cuando el backend detecte un token próximo a expirar, enviará una notificación push al frontend solicitando al usuario si desea continuar usando la aplicación.
-   - Si el usuario acepta, realizar una solicitud a `/v1/refresh_token` para obtener un nuevo token.
-
-## 1. Registro de Usuarios
-
-- **Descripción**: Permite a los nuevos usuarios crear una cuenta proporcionando su información básica.
-- **URL Endpoint**: `/v1/registro`
-- **Método**: `POST`
-- **Headers necesarios**:
-  - `Content-Type: application/json`
-- **Body Schema**:
+- **Endpoint:** `POST /v1/registro`
+- **Descripción:** Registra un nuevo usuario en el sistema.
+- **JSON de solicitud:**
   ```json
   {
     "nombreUsuario": "string",
-    "correoElectronico": "string",
-    "contraseña": "string"
+    "contrasena": "string"
   }
   ```
-- **HTTP Codes**:
-  - `201 Created`: Usuario creado exitosamente.
-  - `400 Bad Request`: Información proporcionada inválida o incompleta.
-  - `409 Conflict`: El nombre de usuario o correo electrónico ya está en uso.
-- **Ejemplo**:
-  - **Request**:
-    ```json
-    {
-      "nombreUsuario": "nuevoUsuario",
-      "correoElectronico": "usuario@example.com",
-      "contraseña": "ContraseñaSegura123"
-    }
-    ```
-  - **Response** (201 Created):
+  - **Campos obligatorios:** `nombreUsuario`, `contrasena`
+- **Respuestas:**
+  - **201:** Usuario creado exitosamente.
     ```json
     {
       "mensaje": "Usuario creado exitosamente."
     }
     ```
+  - **400:** Nombre de usuario y contraseña son requeridos.
+  - **409:** El nombre de usuario ya está en uso.
 
-## 2. Operaciones CRUD de Productos
+#### Inicio de sesión
 
-### Agregar Nuevo Producto
+- **Endpoint:** `POST /v1/login`
+- **Descripción:** Inicia sesión para un usuario existente y retorna un token JWT.
+- **JSON de solicitud:**
+  ```json
+  {
+    "nombreUsuario": "string",
+    "contrasena": "string"
+  }
+  ```
+  - **Campos obligatorios:** `nombreUsuario`, `contrasena`
+- **Respuestas:**
+  - **200:** Inicio de sesión exitoso.
+    ```json
+    {
+      "mensaje": "Inicio de sesión exitoso",
+      "token": "string"
+    }
+    ```
+  - **400:** Nombre de usuario y contraseña son requeridos.
+  - **401:** Credenciales incorrectas.
 
-- **Descripción**: Permite a los usuarios agregar nuevos productos a la base de datos.
-- **URL Endpoint**: `/v1/productos`
-- **Método**: `POST`
-- **Headers necesarios**:
-  - `Content-Type: application/json`
-  - `Authorization: Bearer <token>`
-- **Body Schema**:
+#### Cierre de sesión
+
+- **Endpoint:** `POST /v1/logout`
+- **Descripción:** Cierra la sesión revocando el token JWT utilizado.
+- **Respuestas:**
+  - **200:** Token revocado exitosamente.
+    ```json
+    {
+      "mensaje": "El token ha sido revocado"
+    }
+    ```
+  - **401:** JWT no proporcionado o inválido.
+
+### Productos
+
+#### Agregar producto
+
+- **Endpoint:** `POST /v1/productos`
+- **Descripción:** Agrega un nuevo producto a la base de datos.
+- **JSON de solicitud:**
   ```json
   {
     "nombre": "string",
-    "categoria": "string",
-    "precio": "number"
+    "tipo_medida": "string"
   }
   ```
-- **HTTP Codes**:
-  - `201 Created`: Producto agregado exitosamente.
-  - `400 Bad Request`: Información proporcionada inválida o incompleta.
-  - `401 Unauthorized`: No autenticado o token inválido.
-- **Ejemplo**:
-  - **Request**:
-    ```json
-    {
-      "nombre": "Manzanas",
-      "categoria": "Alimentos",
-      "precio": 0.99
-    }
-    ```
-  - **Response** (201 Created):
+  - **Campos obligatorios:** `nombre`, `tipo_medida`
+- **Respuestas:**
+  - **201:** Producto agregado exitosamente.
     ```json
     {
       "mensaje": "Producto agregado exitosamente."
     }
     ```
-Continuaremos definiendo los endpoints para las operaciones CRUD de productos restantes: consultar, actualizar y eliminar productos.
+  - **400:** Información proporcionada inválida o incompleta.
 
-### Consultar Productos
+#### Consultar productos
 
-- **Descripción**: Permite a los usuarios consultar todos los productos disponibles o un producto específico por su ID.
-- **URL Endpoint**: Para todos los productos: `/v1/productos`
-  Para un producto específico: `/v1/productos/{productoID}`
-- **Método**: `GET`
-- **Headers necesarios**:
-  - `Authorization: Bearer <token>`
-- **HTTP Codes**:
-  - `200 OK`: Consulta exitosa.
-  - `401 Unauthorized`: No autenticado o token inválido.
-  - `404 Not Found`: Producto no encontrado (en caso de buscar por ID).
-- **Ejemplo**:
-  - **Request** (Todos los productos):
-    - No requiere body.
-  - **Response** (200 OK):
+- **Endpoint:** `GET /v1/productos`
+- **Descripción:** Devuelve una lista de todos los productos.
+- **Respuestas:**
+  - **200:** Lista de productos.
     ```json
     [
       {
-        "productoID": 1,
-        "nombre": "Manzanas",
-        "categoria": "Alimentos",
-        "precio": 0.99
-      },
-      {
-        "productoID": 2,
-        "nombre": "Monitor 24 pulgadas",
-        "categoria": "Electrónicos",
-        "precio": 199.99
+        "id": "int",
+        "nombre": "string",
+        "tipo_medida": "string"
       }
     ]
     ```
 
-### Actualizar Producto
+#### Consultar producto por ID
 
-- **Descripción**: Permite a los usuarios actualizar los detalles de un producto existente.
-- **URL Endpoint**: `/v1/productos/{productoID}`
-- **Método**: `PUT`
-- **Headers necesarios**:
-  - `Content-Type: application/json`
-  - `Authorization: Bearer <token>`
-- **Body Schema**:
+- **Endpoint:** `GET /v1/productos/{productoID}`
+- **Descripción:** Devuelve detalles de un producto específico.
+- **Respuestas:**
+  - **200:** Detalles del producto.
+    ```json
+    {
+      "id": "int",
+      "nombre": "string",
+      "tipo_medida": "string"
+    }
+    ```
+  - **404:** Producto no encontrado.
+
+#### Actualizar producto
+
+- **Endpoint:** `PUT /v1/productos/{productoID}`
+- **Descripción:** Actualiza la información de un producto existente.
+- **JSON de solicitud:**
   ```json
   {
     "nombre": "string",
-    "categoria": "string",
-    "precio": "number"
+    "tipo_medida": "string"
   }
   ```
-- **HTTP Codes**:
-  - `200 OK`: Producto actualizado exitosamente.
-  - `400 Bad Request`: Información proporcionada inválida o incompleta.
-  - `401 Unauthorized`: No autenticado o token inválido.
-  - `404 Not Found`: Producto no encontrado.
-- **Ejemplo**:
-  - **Request**:
-    ```json
-    {
-      "nombre": "Manzanas Gala",
-      "categoria": "Alimentos",
-      "precio": 1.09
-    }
-    ```
-  - **Response** (200 OK):
+  - **Campos opcionales:** `nombre`, `tipo_medida`
+- **Respuestas:**
+  - **200:** Producto actualizado exitosamente.
     ```json
     {
       "mensaje": "Producto actualizado exitosamente."
     }
     ```
+  - **400:** Ninguna propiedad provista para actualización.
+  - **404:** Producto no encontrado.
 
-### Eliminar Producto
+#### Eliminar producto
 
-- **Descripción**: Permite a los usuarios eliminar un producto existente.
-- **URL Endpoint**: `/v1/productos/{productoID}`
-- **Método**: `DELETE`
-- **Headers necesarios**:
-  - `Authorization: Bearer <token>`
-- **HTTP Codes**:
-  - `200 OK`: Producto eliminado exitosamente.
-  - `401 Unauthorized`: No autenticado o token inválido.
-  - `404 Not Found`: Producto no encontrado.
-- **Ejemplo**:
-  - **Request**: No requiere body.
-  - **Response** (200 OK):
+- **Endpoint:** `DELETE /v1/productos/{productoID}`
+- **Descripción:** Elimina un producto de la base de datos.
+- **Respuestas:**
+  - **200:** Producto eliminado exitosamente.
     ```json
     {
-      "mensaje": "Producto eliminado exitosamente."
+      "
+
+mensaje": "Producto eliminado exitosamente."
     }
     ```
+  - **404:** Producto no encontrado.
 
-### Crear Nueva Lista de Compras
+### Listas de Compras
 
-- **Descripción**: Permite a los usuarios crear una nueva lista de compras asignándole un nombre.
-- **URL Endpoint**: `/v1/listas`
-- **Método**: `POST`
-- **Headers necesarios**:
-  - `Content-Type: application/json`
-  - `Authorization: Bearer <token>`
-- **Body Schema**:
+#### Crear lista de compras
+
+- **Endpoint:** `POST /v1/listascompras`
+- **Descripción:** Crea una nueva lista de compras para un usuario.
+- **JSON de solicitud:**
   ```json
   {
     "nombre": "string"
   }
   ```
-- **HTTP Codes**:
-  - `201 Created`: Lista de compras creada exitosamente.
-  - `400 Bad Request`: Información proporcionada inválida o incompleta.
-  - `401 Unauthorized`: No autenticado o token inválido.
-- **Ejemplo**:
-  - **Request**:
-    ```json
-    {
-      "nombre": "Compras Semanales"
-    }
-    ```
-  - **Response** (201 Created):
+  - **Campos obligatorios:** `nombre`
+- **Respuestas:**
+  - **201:** Lista de compras creada exitosamente.
     ```json
     {
       "mensaje": "Lista de compras creada exitosamente."
     }
     ```
+  - **400:** El nombre de la lista es requerido.
+  - **404:** Usuario no encontrado.
 
-## 3. Agregar Producto a una Lista
+#### Agregar producto a una lista
 
-- **Descripción**: Permite a los usuarios agregar un producto a una lista de compras especificando la cantidad.
-- **URL Endpoint**: `/v1/listas/{listaID}/productos`
-- **Método**: `POST`
-- **Headers necesarios**:
-  - `Content-Type: application/json`
-  - `Authorization: Bearer <token>`
-- **Body Schema**:
+- **Endpoint:** `POST /v1/listascompras/{listaID}/productos`
+- **Descripción:** Agrega un producto a una lista de compras existente.
+- **JSON de solicitud:**
   ```json
   {
-    "productoID": "int",
+    "id_producto": "int",
     "cantidad": "int"
   }
   ```
-- **HTTP Codes**:
-  - `201 Created`: Producto agregado a la lista exitosamente.
-  - `400 Bad Request`: Información proporcionada inválida o incompleta.
-  - `401 Unauthorized`: No autenticado o token inválido.
-  - `404 Not Found`: Lista de compras no encontrada.
-- **Ejemplo**:
-  - **Request**:
+  - **Campos obligatorios:** `id_producto`, `cantidad`
+- **Respuestas:**
+  - **201:** Producto agregado exitosamente a la lista.
     ```json
     {
-      "productoID": 1,
-      "cantidad": 3
+      "mensaje": "Producto agregado exitosamente a la lista"
     }
     ```
-  - **Response** (201 Created):
-    ```json
-    {
-      "mensaje": "Producto agregado a la lista exitosamente."
-    }
-    ```
+  - **400:** Información proporcionada inválida o incompleta.
+  - **404:** Lista de compras o producto no encontrado.
 
-### Consultar Listas de Compras y Sus Productos
+#### Consultar listas de compras de un usuario
 
-- **Descripción**: Permite a los usuarios ver todas sus listas de compras y los productos agregados a cada una.
-- **URL Endpoint**: `/v1/listas`
-- **Método**: `GET`
-- **Headers necesarios**:
-  - `Authorization: Bearer <token>`
-- **HTTP Codes**:
-  - `200 OK`: Consulta exitosa.
-  - `401 Unauthorized`: No autenticado o token inválido.
-- **Ejemplo**:
-  - **Request**: No requiere body.
-  - **Response** (200 OK):
+- **Endpoint:** `GET /v1/listascompras`
+- **Descripción:** Devuelve todas las listas de compras asociadas a un usuario.
+- **Respuestas:**
+  - **200:** Listas de compras del usuario.
     ```json
     [
       {
-        "listaID": 1,
-        "nombre": "Compras Semanales",
+        "id_lista": "int",
+        "nombre_lista": "string",
+        "completa": "boolean",
         "productos": [
           {
-            "productoID": 1,
-            "nombre": "Manzanas",
-            "cantidad": 3,
-            "comprado": false
+            "id_producto": "int",
+            "nombre": "string",
+            "tipo_medida": "string",
+            "cantidad": "int",
+            "comprado": "boolean"
           }
         ]
       }
     ]
     ```
+  - **404:** Usuario no encontrado.
 
-### Eliminar Producto de una Lista de Compras
+#### Eliminar producto de una lista
 
-- **Descripción**: Permite a los usuarios eliminar un producto específico de una lista de compras.
-- **URL Endpoint**: `/v1/listas/{listaID}/productos/{productoID}`
-- **Método**: `DELETE`
-- **Headers necesarios**:
-  - `Authorization: Bearer <token>`
-- **HTTP Codes**:
-  - `200 OK`: Producto eliminado de la lista exitosamente.
-  - `401 Unauthorized`: No autenticado o token inválido.
-  - `404 Not Found`: Lista de compras o producto no encontrado en la lista.
-- **Ejemplo**:
-  - **Request**: No requiere body.
-  - **Response** (200 OK):
+- **Endpoint:** `DELETE /v1/listascompras/{listaID}/productos/{productoID}`
+- **Descripción:** Elimina un producto específico de una lista de compras.
+- **Respuestas:**
+  - **200:** Producto eliminado exitosamente de la lista.
     ```json
     {
-      "mensaje": "Producto eliminado de la lista exitosamente."
+      "mensaje": "Producto eliminado exitosamente de la lista"
     }
     ```
+  - **404:** Lista de compras o producto no encontrado en la lista.
 
-### Eliminar Lista de Compras Completa
+#### Eliminar una lista de compras
 
-- **Descripción**: Permite a los usuarios eliminar una lista de compras completa, incluyendo todos los productos asociados a ella.
-- **URL Endpoint**: `/v1/listas/{listaID}`
-- **Método**: `DELETE`
-- **Headers necesarios**:
-  - `Authorization: Bearer <token>`
-- **HTTP Codes**:
-  - `200 OK`: Lista de compras eliminada exitosamente.
-  - `401 Unauthorized`: No autenticado o token inválido.
-  - `404 Not Found`: Lista de compras no encontrada.
-- **Ejemplo**:
-  - **Request**: No requiere body.
-  - **Response** (200 OK):
+- **Endpoint:** `DELETE /v1/listascompras/{listaID}`
+- **Descripción:** Elimina una lista de compras completa, incluyendo todos los productos asociados.
+- **Respuestas:**
+  - **200:** Lista de compras eliminada exitosamente.
     ```json
     {
       "mensaje": "Lista de compras eliminada exitosamente."
     }
     ```
+  - **404:** Lista de compras no encontrada.
 
-### Marcar Producto como Comprado
+#### Marcar producto como comprado
 
-- **Descripción**: Permite a los usuarios marcar un producto específico en una lista como comprado.
-- **URL Endpoint**: `/v1/listas/{listaID}/productos/{productoID}/comprar`
-- **Método**: `POST`
-- **Headers necesarios**:
-  - `Authorization: Bearer <token>`
-- **Body Schema**: No requiere un cuerpo específico, ya que el acto de enviar la solicitud a este endpoint implica la acción de marcar el producto como comprado.
-- **HTTP Codes**:
-  - `200 OK`: Producto marcado como comprado exitosamente.
-  - `401 Unauthorized`: No autenticado o token inválido.
-  - `404 Not Found`: Lista de compras o producto no encontrado en la lista.
-- **Ejemplo**:
-  - **Request**: No requiere body.
-  - **Response** (200 OK):
+- **Endpoint:** `PATCH /v1/listascompras/{listaID}/productos/{productoID}`
+- **Descripción:** Marca un producto específico como comprado en una lista de compras.
+- **Respuestas:**
+  - **200:** Producto marcado como comprado exitosamente.
     ```json
     {
-      "mensaje": "Producto marcado como comprado exitosamente."
+      "mensaje": "Producto marcado como comprado exitosamente"
     }
     ```
+  - **404:** Lista de compras o producto no encontrado en la lista.
 
-### Marcar Lista de Compras como Completada
+#### Completar una lista de compras
 
-- **Descripción**: Permite a los usuarios marcar una lista de compras completa como "Completada".
-- **URL Endpoint**: `/v1/listas/{listaID}/completar`
-- **Método**: `POST`
-- **Headers necesarios**:
-  - `Authorization: Bearer <token>`
-- **Body Schema**: No requiere un cuerpo, el acto de enviar la solicitud a este endpoint implica la acción de marcar la lista como completada.
-- **HTTP Codes**:
-  - `200 OK`: Lista de compras marcada como completada exitosamente.
-  - `401 Unauthorized`: No autenticado o token inválido.
-  - `404 Not Found`: Lista de compras no encontrada.
-- **Ejemplo**:
-  - **Request**: No requiere body.
-  - **Response** (200 OK):
+- **Endpoint:** `PATCH /v1/listascompras/{listaID}/completar`
+- **Descripción:** Marca todos los productos de una lista de compras como comprados y la lista como completa.
+- **Respuestas:**
+  - **200:** Lista de compras marcada como completada exitosamente.
     ```json
     {
       "mensaje": "Lista de compras marcada como completada exitosamente."
     }
     ```
+  - **404:** Lista de compras no encontrada.
